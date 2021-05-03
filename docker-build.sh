@@ -215,7 +215,7 @@ _parse_extra_args() {
   local value
   while read -r key; do
     value=$(_remove_quotes "$(jq ".$key" <<<"${INPUT_BUILD_EXTRA_ARGS}")")
-    key=$(_remove_quotes "$key")
+    key=$(_handle_duplicate_keys "$(_remove_quotes "$key")")
     extra_args+=("$key")
     extra_args+=("${value//\\n/
 }")
@@ -228,6 +228,23 @@ _remove_quotes() {
   param="${1:?I need a param}"
   param="${param#\"}"
   echo "${param%\"}"
+}
+
+_trim_whitespace() {
+  local param
+  param="${1:?Param required}"
+  param="$(echo -e "${param}" | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//')"
+  echo "$param"
+}
+
+_handle_duplicate_keys() {
+  local key
+  key="${1:?No key provided}"
+  key=$(_trim_whitespace "$key")
+  if [[ "$key" =~ ^(.+)-[0-9]$ ]]; then
+    key="${BASH_REMATCH[1]}";
+  fi
+  echo "$key"
 }
 
 # action steps
